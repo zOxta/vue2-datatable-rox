@@ -1,5 +1,5 @@
 # vue2-datatable-component
-
+version for rox.
 [![npm version][npm-v-img]][npm-url]
 [![npm download][npm-dl-img]][npm-url]
 [![build][build-img]][build-url]
