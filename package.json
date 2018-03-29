@@ -1,5 +1,5 @@
 {
-  "name": "vue2-datatable-component",
+  "name": "vue2-datatable-component-rox",
   "description": "The best Datatable for Vue.js 2.x which never sucks",
   "version": "2.2.2",
   "main": "dist/min.js",
