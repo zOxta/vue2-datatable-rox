@@ -17,23 +17,25 @@
             {{ $i18nForDatatable('Apply') }}
           </button>
           <template v-if="supportBackup">
-            <button data-toggle="dropdown" class="btn btn-default dropdown-toggle" type="button" style="box-shadow: none">
-              <span class="caret"></span>
-            </button>
-            <ul class="dropdown-menu">
-              <li @click="apply(true)">
-                <a href="#" @click.prevent>
-                  <i class="fa fa-floppy-o"></i>&nbsp;
-                  {{ $i18nForDatatable('Apply and backup settings to local') }}
-                </a>
-              </li>
-              <li v-if="usingBak" @click="rmBackup()">
-                <a href="#" @click.prevent>
-                  <i class="fa fa-trash-o text-danger"></i>&nbsp;
-                  {{ $i18nForDatatable('Clear local settings backup and restore') }}
-                </a>
-              </li>
-            </ul>
+            <div class="dropdown">
+                <button class="btn btn-default dropdown-toggle" data-toggle="dropdown" type="button" style="box-shadow: none">
+                  <span class="caret"></span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-right">
+                  <li class="dropdown-item" @click="apply(true)">
+                    <a href="#" @click.prevent>
+                      <i class="fas fa-save"></i>&nbsp;
+                      {{ $i18nForDatatable('Apply & Save') }}
+                    </a>
+                  </li>
+                  <li  class="dropdown-item" v-if="usingBak" @click="rmBackup()">
+                    <a href="#" @click.prevent>
+                      <i class="fa fa-trash"></i>&nbsp;
+                      {{ $i18nForDatatable('Clear settings') }}
+                    </a>
+                  </li>
+                </ul>
+            </div>
           </template>
         </div>
       </div>
@@ -63,14 +65,18 @@ export default {
       origSettings,
       usingBak: false, // is using backup
       processingCls: '',
-      storageKey: this.supportBackup && keyGen(origSettings)
+      storageKey: 'remirox'//this.supportBackup && keyGen(origSettings)
     }
   },
   created () {
     if (!this.supportBackup) return
-
+    console.log('*** Load backup');
     const backup = getFromLS(this.storageKey)
-    if (!backup) return // no backup found
+      console.log(backup);
+    if (!backup) {
+        console.log("** no backup found")
+        return
+    } // no backup found
 
     replaceWith(this.columns, backup)
     this.usingBak = true
@@ -101,11 +107,15 @@ export default {
   },
   methods: {
     apply (alsoBackup) {
+      // TODO SAVE USER PREF
       this.toggle()
       this.$refs.colGroups.forEach(colGroup => { colGroup.apply() })
       alsoBackup && this.$nextTick(this.backup)
     },
     backup () {
+        console.log('***backup');
+        console.log(this.columns);
+
       saveToLS(this.storageKey, this.columns)
       this.showProcessing()
       this.usingBak = true
