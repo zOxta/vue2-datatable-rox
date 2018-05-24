@@ -8,6 +8,7 @@
         :key="col.title || col.field || idx"
         :class="col.thClass" :style="col.thStyle">
         <!-- <th> component (thComp) -->
+        <div>
         <component
           v-if="col.thComp"
           :is="forDynCompIs(col.thComp)"
@@ -22,6 +23,7 @@
 
         <i v-if="col.explain" class="fa fa-info-circle" style="cursor: help" :title="col.explain"></i>
         <head-sort v-if="col.sortable" :field="col.field" :query="query" />
+        </div>
       </th>
     </transition-group>
   </thead>

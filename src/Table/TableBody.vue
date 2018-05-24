@@ -7,6 +7,7 @@
             <multi-select :selection="selection" :row="item" />
           </td>
           <td v-for="col in columns" :class="col.tdClass" :style="col.tdStyle">
+        <div>
             <!-- <td> component (tdComp) -->
             <component
               v-if="col.tdComp"
@@ -20,6 +21,7 @@
             <template v-else>
               {{ item[col.field] }}
             </template>
+    </div>
           </td>
         </tr>
         <transition name="fade">
