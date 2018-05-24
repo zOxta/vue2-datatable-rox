@@ -1,127 +1,127 @@
 <template>
-  <!-- complex mode -->
-  <div v-if="useComplexMode" name="ComplexTable" class="-complex-table">
-    <template v-for="x in ['Header', 'Body', 'Footer']">
-      <div v-if="x !== 'Footer' || x === 'Footer' && summary"
-        ref="wrappers" :name="`Table${x}Wrapper`" :class="`-table-${x.toLowerCase()}`"
-        :style="[
-          x !== 'Header' && { marginTop: `-${scrollWidth}px` },
-          x === 'Body' && { maxHeight: `${fixHeaderAndSetBodyMaxHeight}px` }
-        ]">
-        <div :name="`NormalTable${x}`">
-          <table-frame v-bind="propsToNormalTable">
-            <component :is="`Table${x}`" v-bind="propsToNormalTable" />
-          </table-frame>
-        </div>
-        <div v-if="leftFixedColumns.length"
-          :name="`LeftFixedTable${x}`"
-          class="-left-fixed -fixed-table"
-          :style="{ left: `${offsetLeft}px` }">
-          <table-frame v-bind="propsToLeftFixedTable" left-fixed>
-            <component :is="`Table${x}`" v-bind="propsToLeftFixedTable" left-fixed />
-          </table-frame>
-        </div>
-        <div v-if="rightFixedColumns.length"
-          :name="`RightFixedTable${x}`"
-          class="-right-fixed -fixed-table"
-          :style="{ right: `-${offsetLeft}px` }">
-          <table-frame v-bind="propsToRightFixedTable" right-fixed>
-            <component :is="`Table${x}`" v-bind="propsToRightFixedTable" right-fixed />
-          </table-frame>
-        </div>
+  <div name="Datatable">
+    <div v-if="$slots.default || HeaderSettings" class="clearfix" style="margin-bottom: 10px">
+      <header-settings v-if="HeaderSettings" class="pull-right"
+        :columns="columns" :support-backup="supportBackup">
+      </header-settings>
+      <slot />
+    </div>
+
+    <tbl v-bind="$props" />
+    
+    <div v-if="Pagination" class="row" style="margin-top: 10px">
+      <div class="col-sm-6" style="white-space: nowrap">
+        <strong>
+          {{ $i18nForDatatable('Total') }} {{ total }} {{ $i18nForDatatable(',') }}
+        </strong>
+        <page-size-select :query="query" :page-size-options="pageSizeOptions" />
       </div>
-    </template>
-  </div>
-  <!-- simple mode -->
-  <div v-else name="SimpleTable">
-    <table-frame v-bind="propsToNormalTable">
-      <table-header v-bind="propsToNormalTable" />
-      <table-body v-bind="propsToNormalTable" />
-      <table-footer v-if="summary" v-bind="propsToNormalTable" />
-    </table-frame>
+      <div class="col-sm-6">
+        <pagination class="pull-right" :total="total" :query="query" />
+      </div>
+    </div>
   </div>
 </template>
 <script>
-import TableFrame from './TableFrame.vue'
-import TableHeader from './TableHeader.vue'
-import TableBody from './TableBody.vue'
-import TableFooter from './TableFooter.vue'
-import props from '../_mixins/props'
-import getScrollWidth from '../_utils/getScrollWidth'
-import isColVisible from '../_utils/isColVisible'
-import syncScroll from '../_utils/syncScroll'
+import HeaderSettings from './HeaderSettings/index.vue'
+import Tbl from './Table/index.vue'
+import Pagination from './Pagination.vue'
+import PageSizeSelect from './PageSizeSelect.vue'
+import props from './_mixins/props'
 
 export default {
-  name: 'Tbl',
+  name: 'Datatable',
   mixins: [props],
-  components: { TableFrame, TableHeader, TableBody, TableFooter },
-  data: () => ({
-    offsetLeft: 0,
-    scrollWidth: getScrollWidth()
-  }),
-  mounted () {
-    // this allows you to fix columns or `fixHeaderAndSetBodyMaxHeight` dynamically
-    let unsync
-    this.$watch('useComplexMode', v => {
-      if (v) {
-        unsync = syncScroll(this.$refs.wrappers, offsetLeft => {
-          this.offsetLeft = offsetLeft
-        })
-      } else {
-        unsync && unsync()
-      }
-    }, { immediate: true })
+  components: { HeaderSettings, Tbl, Pagination, PageSizeSelect },
+  created () {
+    // init query (make all the properties observable by using `$set`)
+    const q = { limit: 10, offset: 0, sort: '', order: '', ...this.query }
+    Object.keys(q).forEach(key => { this.$set(this.query, key, q[key]) })
   },
-  computed: {
-    visibleColumns () {
-      return this.columns.filter(isColVisible)
+    updated () {
+        let tableBodyDivs = $('.-table-body tr:first-child td > div');
+        let tableHeadDivs = $('.-table-header tr:first-child th > div');
+
+        let index = 0;
+        tableBodyDivs.each(function(){
+
+            if ($(this).width() > $(tableHeadDivs[index]).width()) {
+                $(tableHeadDivs[index]).width($(this).width())
+            } else {
+                $(this).width($(tableHeadDivs[index]).width());
+            }
+
+            index++;
+        })
     },
-    leftFixedColumns () {
-      return this.visibleColumns.filter(col => col.fixed && col.fixed !== 'right')
-    },
-    rightFixedColumns () {
-      return this.visibleColumns.filter(col => col.fixed === 'right')
-    },
-    hasFixedColumns () {
-      return !!(this.leftFixedColumns.length + this.rightFixedColumns.length)
-    },
-    useComplexMode () {
-      return !!(this.fixHeaderAndSetBodyMaxHeight || this.hasFixedColumns)
-    },
-    propsToNormalTable () {
-      return { ...this.$props, columns: this.visibleColumns }
-    },
-    propsToLeftFixedTable () {
-      return { ...this.$props, columns: this.leftFixedColumns }
-    },
-    propsToRightFixedTable () {
-      return { ...this.$props, columns: this.rightFixedColumns }
+  watch: {
+    data: {
+      handler (data) {
+        const { supportNested } = this
+        // support nested components feature with extra magic
+        if (supportNested) {
+          const MAGIC_FIELD = '__nested__'
+          data.forEach(item => {
+            if (!item[MAGIC_FIELD]) {
+              this.$set(item, MAGIC_FIELD, {
+                comp: undefined, // current nested component
+                visible: false,
+                $toggle (comp, visible) {
+                  switch (arguments.length) {
+                    case 0:
+                      this.visible = !this.visible
+                      break
+                    case 1:
+                      switch (typeof comp) {
+                        case 'boolean':
+                          this.visible = comp
+                          break
+                        case 'string':
+                        case 'object':
+                          this.comp = comp
+                          this.visible = !this.visible
+                          break
+                      }
+                      break
+                    case 2:
+                      this.comp = comp
+                      this.visible = visible
+                      break
+                  }
+                }
+              })
+              if (supportNested === 'accordion') {
+                this.$watch(
+                  () => item[MAGIC_FIELD],
+                  nested => {
+                    // only one nested component can be expanded at the same time
+                    if (data.filter(item => item[MAGIC_FIELD].visible).length < 2) return
+
+                    data.forEach(item => {
+                      if (item[MAGIC_FIELD].visible && item[MAGIC_FIELD] !== nested) {
+                        item[MAGIC_FIELD].visible = false
+                      }
+                    })
+                  },
+                  { deep: true }
+                )
+              }
+              Object.defineProperty(item, MAGIC_FIELD, { enumerable: false })
+            }
+          })
+        }
+      },
+      immediate: true
     }
   }
 }
 </script>
 <style>
-.-complex-table {
-  position: relative;
+/* transition effect: fade */
+.fade-enter-active, .fade-leave-active {
+  transition: opacity .2s;
 }
-.-complex-table table {
-  background: #fff;
-}
-.-table-header, .-table-body, .-table-footer {
-  position: relative;
-  overflow: scroll;
-}
-.-fixed-table {
-  position: absolute;
-  top: 0;
-}
-.-fixed-table table {
-  width: auto;
-}
-.-left-fixed {
-  box-shadow: 1px 0 5px #ddd;
-}
-.-right-fixed {
-  box-shadow: 1px 0 5px #ddd;
+.fade-enter, .fade-leave-active {
+  opacity: 0;
 }
 </style>
