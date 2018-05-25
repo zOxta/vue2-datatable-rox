@@ -38,6 +38,27 @@ export default {
     const q = { limit: 10, offset: 0, sort: '', order: '', ...this.query }
     Object.keys(q).forEach(key => { this.$set(this.query, key, q[key]) })
   },
+    updated () {
+        // TODO : only trigger this once
+
+        setTimeout(function(){
+            let tableBodyDivs = $('.-table-body tr:first-child td > div');
+            let tableHeadDivs = $('.-table-header tr:first-child th > div');
+
+            let index = 0;
+            tableBodyDivs.each(function(){
+
+                if ($(this).width() > $(tableHeadDivs[index]).width()) {
+                    $(tableHeadDivs[index]).width($(this).width())
+                } else {
+                    $(this).width($(tableHeadDivs[index]).width());
+                }
+
+                index++;
+            })
+        }, 2000);
+
+    },
   watch: {
     data: {
       handler (data) {
