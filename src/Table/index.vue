@@ -23,11 +23,11 @@
   </div>
 </template>
 <script>
-import HeaderSettings from './HeaderSettings/index.vue'
-import Tbl from './Table/index.vue'
-import Pagination from './Pagination.vue'
-import PageSizeSelect from './PageSizeSelect.vue'
-import props from './_mixins/props'
+import HeaderSettings from '../HeaderSettings/index.vue'
+import Tbl from './index.vue'
+import Pagination from '../Pagination.vue'
+import PageSizeSelect from '../PageSizeSelect.vue'
+import props from '../_mixins/props'
 
 export default {
   name: 'Datatable',
